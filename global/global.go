@@ -35,5 +35,14 @@ const (
 	InstanceExpireDuration      = 90 * time.Second   //instance's renewTimestamp after this will be canceled
 	InstanceMaxExpireDuration   = 3600 * time.Second //instance's renewTimestamp after this will be canceled
 	ProtectTimeInterval         = 60 * time.Second   //two renew cycle
-	NodePerceptionInterval      = 5 * time.Second    //nodesprotect
+	NodePerceptionInterval      = 5 * time.Second    // 更新节点间隔
+)
+
+type Action int
+
+const (
+	Register Action = iota
+	Renew
+	Cancel
+	Delete
 )

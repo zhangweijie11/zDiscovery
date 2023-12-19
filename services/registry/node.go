@@ -1,9 +1,16 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/skyhackvip/service_discovery/configs"
+	"github.com/skyhackvip/service_discovery/pkg/errcode"
+	"github.com/skyhackvip/service_discovery/pkg/httputil"
 	"github.com/zhangweijie11/zDiscovery/config"
 	"github.com/zhangweijie11/zDiscovery/global"
+	"log"
+	"strconv"
+	"time"
 )
 
 type Node struct {
@@ -24,4 +31,73 @@ func NewNode(config *config.Config, addr string) *Node {
 		cancelUrl:   fmt.Sprintf("http://%s%s", addr, global.CancelURL),
 		renewUrl:    fmt.Sprintf("http://%s%s", addr, global.RenewURL),
 	}
+}
+
+func (node *Node) call(url string, action global.Action, instance *Instance, data interface{}) error {
+	params := make(map[string]interface{})
+	params["env"] = instance.Env
+	params["appid"] = instance.AppID
+	params["hostname"] = instance.Hostname
+	params["replication"] = true //broadcast stop here
+	switch action {
+	case global.Register:
+		params["addresses"] = instance.Addresses
+		params["status"] = instance.Status
+		params["version"] = instance.Version
+		params["reg_timestamp"] = strconv.FormatInt(instance.RegTimestamp, 10)
+		params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
+		params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+	case global.Renew:
+		params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
+		params["renew_timestamp"] = time.Now().UnixNano()
+	case global.Cancel:
+		params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+	}
+	// 请求其他节点
+	resp, err := httputil.HttpPost(url, params)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	response := Response{}
+	err = json.Unmarshal([]byte(resp), &response)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	if response.Code != configs.StatusOK { //code!=200
+		log.Printf("uri is (%v),response code (%v)\n", url, response.Code)
+		json.Unmarshal(response.Data, data)
+		return errcode.Conflict
+	}
+	return nil
+}
+
+func (node *Node) Register(instance *Instance) error {
+	return node.call(node.registerUrl, global.Register, instance, nil)
+}
+
+func (node *Node) Cancel(instance *Instance) error {
+	return node.call(node.cancelUrl, global.Cancel, instance, nil)
+}
+
+func (node *Node) Renew(instance *Instance) error {
+	var res *Instance
+	err := node.call(node.renewUrl, global.Renew, instance, &res)
+	// 如果节点续约出现问题，则直接判定为节点下线
+	if err == errcode.ServerError {
+		log.Printf("node call %s ! renew error %s \n", node.renewUrl, err)
+		node.status = configs.NodeStatusDown //node down
+		return err
+	}
+	// 如果显示节点不存在，则注册节点
+	if err == errcode.NotFound { //register
+		log.Printf("node call %s ! renew not found, register again \n", node.renewUrl)
+		return node.call(node.registerUrl, global.Register, instance, nil)
+	}
+	// 如果网络冲突并且实例不为空则注册节点
+	if err == errcode.Conflict && res != nil {
+		return node.call(node.registerUrl, global.Register, res, nil)
+	}
+	return err
 }

@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/zhangweijie11/zDiscovery/global"
 	"sync"
+	"sync/atomic"
 )
 
 // Guard 统计中心
@@ -20,4 +21,9 @@ func (gd *Guard) incrNeed() {
 
 	gd.needRenewCount += int64(global.CheckEvictInterval / global.RenewInterval)
 	gd.threshold = int64(float64(gd.needRenewCount) + global.SelfProtectThreshold)
+}
+
+// 服务续约次数+1
+func (gd *Guard) incrCount() {
+	atomic.AddInt64(&gd.renewCount, 1)
 }
