@@ -2,7 +2,6 @@ package registry
 
 import (
 	"fmt"
-	"github.com/skyhackvip/service_discovery/configs"
 	"github.com/zhangweijie11/zDiscovery/config"
 	"github.com/zhangweijie11/zDiscovery/global"
 )
@@ -21,8 +20,8 @@ func NewNode(config *config.Config, addr string) *Node {
 		config:      config,
 		addr:        addr,
 		status:      global.NodeStatusDown,
-		registerUrl: fmt.Sprintf("http://%s%s", addr, configs.RegisterURL),
-		cancelUrl:   fmt.Sprintf("http://%s%s", addr, configs.CancelURL),
-		renewUrl:    fmt.Sprintf("http://%s%s", addr, configs.RenewURL),
+		registerUrl: fmt.Sprintf("http://%s%s", addr, global.RegisterURL),
+		cancelUrl:   fmt.Sprintf("http://%s%s", addr, global.CancelURL),
+		renewUrl:    fmt.Sprintf("http://%s%s", addr, global.RenewURL),
 	}
 }
