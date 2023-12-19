@@ -3,7 +3,6 @@ package registry
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/skyhackvip/service_discovery/configs"
 	"github.com/zhangweijie11/zDiscovery/config"
 	"github.com/zhangweijie11/zDiscovery/global"
 	"github.com/zhangweijie11/zDiscovery/global/utils"
@@ -43,7 +42,7 @@ func (dis *Discovery) initSync() {
 			log.Printf("get from %v error : %v", url, err)
 			continue
 		}
-		if resp.Code != configs.StatusOK {
+		if resp.Code != global.StatusOK {
 			log.Printf("get from %v error : %v", url, resp.Message)
 			continue
 		}
@@ -63,7 +62,7 @@ func (dis *Discovery) regSelf() *Instance {
 	instance := &Instance{
 		Env:             dis.config.Env,
 		AppID:           global.DiscoveryAppId,
-		Hostname:        dis.config.HostName,
+		Hostname:        dis.config.Hostname,
 		Addresses:       []string{"http://" + dis.config.HttpServer},
 		Version:         "",
 		Status:          global.NodeStatusUp,
@@ -110,7 +109,7 @@ func (dis *Discovery) nodesPerception() {
 		case <-ticker.C:
 			log.Println("### discovery node protect tick ###")
 			log.Printf("### discovery nodes,len (%v) ###\n", len(dis.Nodes.Load().(*Nodes).AllNodes()))
-			fetchData, err := dis.Registry.Fetch(dis.config.Env, configs.DiscoveryAppId, configs.NodeStatusUp, lastTimestamp)
+			fetchData, err := dis.Registry.Fetch(dis.config.Env, global.DiscoveryAppId, global.NodeStatusUp, lastTimestamp)
 			if err != nil || fetchData == nil {
 				continue
 			}
@@ -143,6 +142,17 @@ func (dis *Discovery) exitProtect() {
 	time.Sleep(global.ProtectTimeInterval)
 	dis.protected = false
 	log.Println("### discovery node exit protect after 60s ###")
+}
+
+func (dis *Discovery) CancelSelf() {
+	log.Println("### discovery node cancel self when exit ###")
+	dis.Registry.Cancel(dis.config.Env, global.DiscoveryAppId, dis.config.Hostname, time.Now().UnixNano())
+	instance := &Instance{
+		Env:      dis.config.Env,
+		Hostname: dis.config.Hostname,
+		AppID:    global.DiscoveryAppId,
+	}
+	dis.Nodes.Load().(*Nodes).Replicate(global.Cancel, instance) //broadcast
 }
 
 func NewDiscovery(conf *config.Config) *Discovery {

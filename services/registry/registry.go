@@ -2,7 +2,6 @@ package registry
 
 import (
 	"fmt"
-	"github.com/skyhackvip/service_discovery/pkg/errcode"
 	"github.com/zhangweijie11/zDiscovery/global/utils"
 	"sync"
 )
@@ -78,15 +77,15 @@ func (r *Registry) Fetch(env, appid string, status uint32, latestTime int64) (*F
 }
 
 // Cancel 注销应用服务
-func (r *Registry) Cancel(env, appid, hostname string, latestTimestamp int64) (*Instance, *errcode.Error) {
+func (r *Registry) Cancel(env, appid, hostname string, latestTimestamp int64) (*Instance, *utils.Error) {
 	// 获取应用服务
 	app, ok := r.getApplication(appid, env)
 	if !ok {
-		return nil, errcode.NotFound
+		return nil, utils.NotFound
 	}
 	instance, ok, insLen := app.Cancel(hostname, latestTimestamp)
 	if !ok {
-		return nil, errcode.NotFound
+		return nil, utils.NotFound
 	}
 	// 如果实例列表为空，则删除该应用服务
 	if insLen == 0 {

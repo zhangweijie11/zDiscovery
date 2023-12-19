@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"github.com/skyhackvip/service_discovery/configs"
 	"github.com/zhangweijie11/zDiscovery/global"
 	"sync"
 	"sync/atomic"
@@ -32,6 +31,6 @@ func (gd *Guard) incrCount() {
 func (gd *Guard) decrNeed() {
 	gd.lock.Lock()
 	defer gd.lock.Unlock()
-	gd.needRenewCount -= int64(configs.CheckEvictInterval / configs.RenewInterval)
-	gd.threshold = int64(float64(gd.needRenewCount) * configs.SelfProtectThreshold)
+	gd.needRenewCount -= int64(global.CheckEvictInterval / global.RenewInterval)
+	gd.threshold = int64(float64(gd.needRenewCount) * global.SelfProtectThreshold)
 }

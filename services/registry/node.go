@@ -3,11 +3,9 @@ package registry
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/skyhackvip/service_discovery/configs"
-	"github.com/skyhackvip/service_discovery/pkg/errcode"
-	"github.com/skyhackvip/service_discovery/pkg/httputil"
 	"github.com/zhangweijie11/zDiscovery/config"
 	"github.com/zhangweijie11/zDiscovery/global"
+	"github.com/zhangweijie11/zDiscovery/global/utils"
 	"log"
 	"strconv"
 	"time"
@@ -54,7 +52,7 @@ func (node *Node) call(url string, action global.Action, instance *Instance, dat
 		params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
 	}
 	// 请求其他节点
-	resp, err := httputil.HttpPost(url, params)
+	resp, err := utils.HttpPost(url, params)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -65,10 +63,10 @@ func (node *Node) call(url string, action global.Action, instance *Instance, dat
 		log.Println(err)
 		return err
 	}
-	if response.Code != configs.StatusOK { //code!=200
+	if response.Code != global.StatusOK { //code!=200
 		log.Printf("uri is (%v),response code (%v)\n", url, response.Code)
 		json.Unmarshal(response.Data, data)
-		return errcode.Conflict
+		return utils.Conflict
 	}
 	return nil
 }
@@ -85,18 +83,18 @@ func (node *Node) Renew(instance *Instance) error {
 	var res *Instance
 	err := node.call(node.renewUrl, global.Renew, instance, &res)
 	// 如果节点续约出现问题，则直接判定为节点下线
-	if err == errcode.ServerError {
+	if err == utils.ServerError {
 		log.Printf("node call %s ! renew error %s \n", node.renewUrl, err)
-		node.status = configs.NodeStatusDown //node down
+		node.status = global.NodeStatusDown //node down
 		return err
 	}
 	// 如果显示节点不存在，则注册节点
-	if err == errcode.NotFound { //register
+	if err == utils.NotFound { //register
 		log.Printf("node call %s ! renew not found, register again \n", node.renewUrl)
 		return node.call(node.registerUrl, global.Register, instance, nil)
 	}
 	// 如果网络冲突并且实例不为空则注册节点
-	if err == errcode.Conflict && res != nil {
+	if err == utils.Conflict && res != nil {
 		return node.call(node.registerUrl, global.Register, res, nil)
 	}
 	return err
