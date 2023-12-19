@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"github.com/skyhackvip/service_discovery/pkg/errcode"
 	"github.com/zhangweijie11/zDiscovery/global/utils"
 	"sync"
 )
@@ -74,4 +75,45 @@ func (r *Registry) Fetch(env, appid string, status uint32, latestTime int64) (*F
 		return nil, utils.NotFound
 	}
 	return app.GetInstance(status, latestTime) //err = not modify
+}
+
+// Cancel 注销应用服务
+func (r *Registry) Cancel(env, appid, hostname string, latestTimestamp int64) (*Instance, *errcode.Error) {
+	// 获取应用服务
+	app, ok := r.getApplication(appid, env)
+	if !ok {
+		return nil, errcode.NotFound
+	}
+	instance, ok, insLen := app.Cancel(hostname, latestTimestamp)
+	if !ok {
+		return nil, errcode.NotFound
+	}
+	// 如果实例列表为空，则删除该应用服务
+	if insLen == 0 {
+		r.lock.Lock()
+		delete(r.apps, fmt.Sprintf("%s-%s", appid, env))
+		r.lock.Unlock()
+	}
+	r.guard.decrNeed()
+	return instance, nil
+}
+
+func (r *Registry) getAllApplications() []*Application {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	apps := make([]*Application, 0, len(r.apps))
+	for _, app := range r.apps {
+		apps = append(apps, app)
+	}
+	return apps
+}
+
+// FetchAll 获取全部应用服务及其实例
+func (r *Registry) FetchAll() map[string][]*Instance {
+	apps := r.getAllApplications()
+	rs := make(map[string][]*Instance)
+	for _, app := range apps {
+		rs[app.appid] = append(rs[app.appid], app.GetAllInstances()...)
+	}
+	return rs
 }

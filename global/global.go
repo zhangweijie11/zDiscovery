@@ -1,6 +1,9 @@
 package global
 
-import "time"
+import (
+	"github.com/zhangweijie11/zDiscovery/services/registry"
+	"time"
+)
 
 const (
 	NodeStatusUp = iota + 1
@@ -34,7 +37,7 @@ const (
 	ResetGuardNeedCountInterval = 15 * time.Minute   //ticker reset guard need count
 	InstanceExpireDuration      = 90 * time.Second   //instance's renewTimestamp after this will be canceled
 	InstanceMaxExpireDuration   = 3600 * time.Second //instance's renewTimestamp after this will be canceled
-	ProtectTimeInterval         = 60 * time.Second   //two renew cycle
+	ProtectTimeInterval         = 60 * time.Second   // 两次续约时间间隔
 	NodePerceptionInterval      = 5 * time.Second    // 更新节点间隔
 )
 
@@ -46,3 +49,5 @@ const (
 	Cancel
 	Delete
 )
+
+var Discovery *registry.Discovery

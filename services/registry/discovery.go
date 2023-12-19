@@ -138,6 +138,13 @@ func (dis *Discovery) nodesPerception() {
 	}
 }
 
+// 退出保护模式
+func (dis *Discovery) exitProtect() {
+	time.Sleep(global.ProtectTimeInterval)
+	dis.protected = false
+	log.Println("### discovery node exit protect after 60s ###")
+}
+
 func NewDiscovery(conf *config.Config) *Discovery {
 	discovery := &Discovery{
 		config:    conf,
@@ -155,6 +162,8 @@ func NewDiscovery(conf *config.Config) *Discovery {
 	go discovery.renewTask(instance)
 	// 更新节点列表
 	go discovery.nodesPerception()
+	// 退出保护模式
+	go discovery.exitProtect()
 
 	return discovery
 }

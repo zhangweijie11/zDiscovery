@@ -100,3 +100,33 @@ func (app *Application) GetInstance(status uint32, latestTime int64) (*FetchData
 	}
 	return &fetchData, nil
 }
+
+// Cancel 注销应用服务的节点
+func (app *Application) Cancel(hostname string, latestTimestamp int64) (*Instance, bool, int) {
+	newInstance := new(Instance)
+	app.lock.Lock()
+	defer app.lock.Unlock()
+	appIn, ok := app.instances[hostname]
+	if !ok {
+		return nil, ok, 0
+	}
+	// 删除实例
+	delete(app.instances, hostname)
+	appIn.LatestTimestamp = latestTimestamp
+	app.upLatestTimestamp(latestTimestamp)
+	*newInstance = *appIn
+	return newInstance, true, len(app.instances)
+}
+
+// GetAllInstances 获取所有实例
+func (app *Application) GetAllInstances() []*Instance {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+	rs := make([]*Instance, 0, len(app.instances))
+	for _, instance := range app.instances {
+		newInstance := new(Instance)
+		*newInstance = *instance
+		rs = append(rs, newInstance)
+	}
+	return rs
+}
