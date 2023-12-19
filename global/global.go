@@ -28,9 +28,9 @@ const (
 )
 
 const (
-	RenewInterval               = 30 * time.Second   //client heart beat interval
-	CheckEvictInterval          = 60 * time.Second   //evict task interval
-	SelfProtectThreshold        = 0.85               //self protect threshold
+	RenewInterval               = 30 * time.Second   // 心跳监测间隔时间
+	CheckEvictInterval          = 60 * time.Second   // 剔除实例间隔时间
+	SelfProtectThreshold        = 0.85               //保护模式阈值
 	ResetGuardNeedCountInterval = 15 * time.Minute   //ticker reset guard need count
 	InstanceExpireDuration      = 90 * time.Second   //instance's renewTimestamp after this will be canceled
 	InstanceMaxExpireDuration   = 3600 * time.Second //instance's renewTimestamp after this will be canceled
