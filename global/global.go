@@ -30,14 +30,14 @@ const (
 )
 
 const (
-	RenewInterval               = 30 * time.Second   // 心跳监测间隔时间
-	CheckEvictInterval          = 60 * time.Second   // 剔除实例间隔时间
+	RenewInterval               = 30 * time.Second   // 心跳监测时间间隔
+	CheckEvictInterval          = 60 * time.Second   // 删除实例时间间隔
 	SelfProtectThreshold        = 0.85               //保护模式阈值
-	ResetGuardNeedCountInterval = 15 * time.Minute   //ticker reset guard need count
-	InstanceExpireDuration      = 90 * time.Second   //instance's renewTimestamp after this will be canceled
-	InstanceMaxExpireDuration   = 3600 * time.Second //instance's renewTimestamp after this will be canceled
+	ResetGuardNeedCountInterval = 15 * time.Minute   // 注册表重置时间间隔
+	InstanceExpireDuration      = 90 * time.Second   // 实例的过期时间
+	InstanceMaxExpireDuration   = 3600 * time.Second //实例的最大过期时间
 	ProtectTimeInterval         = 60 * time.Second   // 两次续约时间间隔
-	NodePerceptionInterval      = 5 * time.Second    // 更新节点间隔
+	NodePerceptionInterval      = 5 * time.Second    // 更新节点时间间隔
 )
 
 type Action int

@@ -130,3 +130,11 @@ func (app *Application) GetAllInstances() []*Instance {
 	}
 	return rs
 }
+
+// GetInstanceLen 获取实例数量
+func (app *Application) GetInstanceLen() int {
+	app.lock.RLock()
+	instanceLen := len(app.instances)
+	app.lock.RUnlock()
+	return instanceLen
+}
