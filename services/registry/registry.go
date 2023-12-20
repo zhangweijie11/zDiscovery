@@ -12,10 +12,10 @@ type Registry struct {
 	guard *Guard
 }
 
+// NewRegistry 初始化注册表
 func NewRegistry() *Registry {
 	registry := &Registry{
 		apps:  make(map[string]*Application),
-		lock:  sync.RWMutex{},
 		guard: new(Guard),
 	}
 
@@ -28,6 +28,7 @@ func (r *Registry) Register(instance *Instance, latestTimestamp int64) (*Applica
 	key := fmt.Sprintf("%s-%s", instance.AppID, instance.Env)
 	r.lock.RLock()
 	app, ok := r.apps[key]
+	r.lock.RUnlock()
 	// 如果注册中心不存在该应用服务则添加
 	if !ok {
 		app = NewApplication(instance.AppID)
@@ -35,7 +36,7 @@ func (r *Registry) Register(instance *Instance, latestTimestamp int64) (*Applica
 	// 添加应用服务的实例
 	_, isNew := app.AddInstance(instance, latestTimestamp)
 	if isNew {
-		// 重新计算一个周期需要的续约次数和保护模式阈值
+		// 重新计算一个周期需要的续约次数和保护模式阈值，2*0.85=1.6  取 1
 		r.guard.incrNeed()
 	}
 
@@ -58,11 +59,12 @@ func (r *Registry) Renew(env, appid, hostname string) (*Instance, *utils.Error) 
 	if !ok {
 		return nil, utils.NotFound
 	}
-	// 修改实例的最后更新时间
+	// 对当前节点进行续约
 	in, ok := app.Renew(hostname)
 	if !ok {
 		return nil, utils.NotFound
 	}
+	// 如果续约成功，对续约总次数+1
 	r.guard.incrCount()
 	return in, nil
 }

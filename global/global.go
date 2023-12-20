@@ -1,7 +1,6 @@
 package global
 
 import (
-	"github.com/zhangweijie11/zDiscovery/services/registry"
 	"time"
 )
 
@@ -49,5 +48,3 @@ const (
 	Cancel
 	Delete
 )
-
-var Discovery *registry.Discovery

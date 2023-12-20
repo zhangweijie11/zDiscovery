@@ -11,8 +11,10 @@ type Nodes struct {
 	selfAddr string
 }
 
+// NewNodes 初始化所有注册中心服务实例
 func NewNodes(conf *config.Config) *Nodes {
 	nodes := make([]*Node, 0, len(conf.Nodes))
+	// 将注册中心的节点加入节点列表
 	for _, addr := range conf.Nodes {
 		node := NewNode(conf, addr)
 		nodes = append(nodes, node)
@@ -37,6 +39,7 @@ func (nodes *Nodes) AllNodes() []*Node {
 	return result
 }
 
+// SetUp 节点上线
 func (nodes *Nodes) SetUp() {
 	for _, node := range nodes.nodes {
 		// 节点上线
@@ -46,7 +49,7 @@ func (nodes *Nodes) SetUp() {
 	}
 }
 
-// Replicate 节点复制（节点本身也作为注册中心服务的实例）
+// Replicate 将当前节点同步至全部节点
 func (nodes *Nodes) Replicate(action global.Action, instance *Instance) error {
 	if len(nodes.nodes) == 0 {
 		return nil
@@ -54,7 +57,7 @@ func (nodes *Nodes) Replicate(action global.Action, instance *Instance) error {
 	// 将实例依次注册到每个节点
 	for _, node := range nodes.nodes {
 		if node.addr != nodes.selfAddr {
-			log.Printf("### replicate node(%v),action(%v),hostname(%v) ###\n", node.addr, action, instance.Hostname)
+			log.Printf("### 对节点地址 %v 进行操作,操作方法 %v ,当前主机名称 %v ###\n", node.addr, action, instance.Hostname)
 			go nodes.action(node, action, instance)
 		}
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/zhangweijie11/zDiscovery/global"
 	"github.com/zhangweijie11/zDiscovery/global/utils"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -20,6 +19,7 @@ type Node struct {
 	renewUrl    string         // 续约地址
 }
 
+// NewNode 初始化单个注册中心服务节点，初始节点状态为下线
 func NewNode(config *config.Config, addr string) *Node {
 	return &Node{
 		config:      config,
@@ -37,34 +37,46 @@ func (node *Node) call(url string, action global.Action, instance *Instance, dat
 	params["appid"] = instance.AppID
 	params["hostname"] = instance.Hostname
 	params["replication"] = true //broadcast stop here
+	//switch action {
+	//case global.Register:
+	//	params["addresses"] = instance.Addresses
+	//	params["status"] = instance.Status
+	//	params["version"] = instance.Version
+	//	params["reg_timestamp"] = strconv.FormatInt(instance.RegTimestamp, 10)
+	//	params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
+	//	params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+	//case global.Renew:
+	//	params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
+	//	params["renew_timestamp"] = time.Now().UnixNano()
+	//case global.Cancel:
+	//	params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+	//}
 	switch action {
 	case global.Register:
 		params["addresses"] = instance.Addresses
 		params["status"] = instance.Status
 		params["version"] = instance.Version
-		params["reg_timestamp"] = strconv.FormatInt(instance.RegTimestamp, 10)
-		params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
-		params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+		params["reg_timestamp"] = instance.RegTimestamp
+		params["dirty_timestamp"] = instance.DirtyTimestamp
+		params["latest_timestamp"] = instance.LatestTimestamp
 	case global.Renew:
-		params["dirty_timestamp"] = strconv.FormatInt(instance.DirtyTimestamp, 10)
+		params["dirty_timestamp"] = instance.DirtyTimestamp
 		params["renew_timestamp"] = time.Now().UnixNano()
 	case global.Cancel:
-		params["latest_timestamp"] = strconv.FormatInt(instance.LatestTimestamp, 10)
+		params["latest_timestamp"] = instance.LatestTimestamp
 	}
 	// 请求其他节点
 	resp, err := utils.HttpPost(url, params)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	response := Response{}
 	err = json.Unmarshal([]byte(resp), &response)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	if response.Code != global.StatusOK { //code!=200
-		log.Printf("uri is (%v),response code (%v)\n", url, response.Code)
+		log.Printf("请求地址为 %v ,响应状态码为 %v\n", url, response.Code)
 		json.Unmarshal(response.Data, data)
 		return utils.Conflict
 	}

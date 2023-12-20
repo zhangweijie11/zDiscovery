@@ -35,7 +35,7 @@ func (app *Application) AddInstance(instance *Instance, latestTimestamp int64) (
 	defer app.lock.Unlock()
 	appIns, ok := app.instances[instance.Hostname]
 	if ok {
-		// 节点的上限时间同步为服务的上线时间
+		// 节点的上线时间同步为服务的上线时间
 		instance.UpTimestamp = appIns.UpTimestamp
 		if instance.DirtyTimestamp < appIns.DirtyTimestamp {
 			instance = appIns
@@ -49,7 +49,7 @@ func (app *Application) AddInstance(instance *Instance, latestTimestamp int64) (
 
 }
 
-// Renew 续约
+// Renew 对当前节点进行续约
 func (app *Application) Renew(hostname string) (*Instance, bool) {
 	app.lock.Lock()
 	defer app.lock.Unlock()

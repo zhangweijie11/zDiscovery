@@ -19,17 +19,20 @@ type Discovery struct {
 	Nodes     atomic.Value
 }
 
+// 同步全部节点的数据
 func (dis *Discovery) initSync() {
+	// 获取当前存储的所有节点
 	nodes := dis.Nodes.Load().(*Nodes)
 	for _, node := range nodes.AllNodes() {
-		// 本身节点，无需同步
+		// 如果是本身节点，无需同步
 		if node.addr == nodes.selfAddr {
 			continue
 		}
+		// 请求其他节点的获取全部节点数据的接口
 		url := fmt.Sprintf("http://%s%s", node.addr, global.FetchAllURL)
 		response, err := utils.HttpPost(url, nil)
 		if err != nil {
-			log.Println(err)
+			log.Println("同步其余节点数据时出现异常", err)
 			continue
 		}
 		var resp struct {
@@ -57,6 +60,7 @@ func (dis *Discovery) initSync() {
 	nodes.SetUp()
 }
 
+// 注册自身，也就是添加注册中心的节点
 func (dis *Discovery) regSelf() *Instance {
 	now := time.Now().UnixNano()
 	instance := &Instance{
@@ -86,20 +90,20 @@ func (dis *Discovery) renewTask(instance *Instance) {
 	for {
 		select {
 		case <-ticker.C:
-			log.Println("### discovery node renew every 30s ###")
+			log.Println("### 每 30 秒续约一次节点 ###")
 			_, err := dis.Registry.Renew(instance.Env, instance.AppID, instance.Hostname)
+			// 续约失败，表示当前节点不存在，需要重新注册
 			if err == utils.NotFound {
 				dis.Registry.Register(instance, now)
 				dis.Nodes.Load().(*Nodes).Replicate(global.Register, instance)
 			} else {
 				dis.Nodes.Load().(*Nodes).Replicate(global.Renew, instance)
 			}
-
 		}
 	}
 }
 
-// update discovery nodes list
+// 更新节点列表
 func (dis *Discovery) nodesPerception() {
 	var lastTimestamp int64
 	ticker := time.NewTicker(global.NodePerceptionInterval)
@@ -107,8 +111,7 @@ func (dis *Discovery) nodesPerception() {
 	for {
 		select {
 		case <-ticker.C:
-			log.Println("### discovery node protect tick ###")
-			log.Printf("### discovery nodes,len (%v) ###\n", len(dis.Nodes.Load().(*Nodes).AllNodes()))
+			log.Printf("### 定期自发现子节点， 一共发现节点, %v 个 ###\n", len(dis.Nodes.Load().(*Nodes).AllNodes()))
 			fetchData, err := dis.Registry.Fetch(dis.config.Env, global.DiscoveryAppId, global.NodeStatusUp, lastTimestamp)
 			if err != nil || fetchData == nil {
 				continue
@@ -122,6 +125,7 @@ func (dis *Discovery) nodesPerception() {
 					}
 				}
 			}
+			// 设置更新时间，后续只会获取上线的节点
 			lastTimestamp = fetchData.LatestTimestamp
 
 			// 更新节点列表
@@ -132,7 +136,7 @@ func (dis *Discovery) nodesPerception() {
 			ns := NewNodes(config)
 			ns.SetUp()
 			dis.Nodes.Store(ns)
-			log.Printf("### discovery protect change nodes,len (%v) ###\n", len(dis.Nodes.Load().(*Nodes).AllNodes()))
+			log.Printf("### 更新节点列表,数量变为 %v 个 ###\n", len(dis.Nodes.Load().(*Nodes).AllNodes()))
 		}
 	}
 }
@@ -141,11 +145,11 @@ func (dis *Discovery) nodesPerception() {
 func (dis *Discovery) exitProtect() {
 	time.Sleep(global.ProtectTimeInterval)
 	dis.protected = false
-	log.Println("### discovery node exit protect after 60s ###")
+	log.Println("### 每 60 秒检测保护模式 ###")
 }
 
 func (dis *Discovery) CancelSelf() {
-	log.Println("### discovery node cancel self when exit ###")
+	log.Println("### 退出时注销本身节点 ###")
 	dis.Registry.Cancel(dis.config.Env, global.DiscoveryAppId, dis.config.Hostname, time.Now().UnixNano())
 	instance := &Instance{
 		Env:      dis.config.Env,
@@ -155,6 +159,7 @@ func (dis *Discovery) CancelSelf() {
 	dis.Nodes.Load().(*Nodes).Replicate(global.Cancel, instance) //broadcast
 }
 
+// NewDiscovery 初始化注册中心服务
 func NewDiscovery(conf *config.Config) *Discovery {
 	discovery := &Discovery{
 		config:    conf,
@@ -162,7 +167,7 @@ func NewDiscovery(conf *config.Config) *Discovery {
 		Registry:  NewRegistry(),
 	}
 
-	// 初始化节点，一个节点就是一个独立的注册中心服务
+	// 初始化节点，一个节点就是一个独立的注册中心服务，可以在多个 goroutine 中安全地共享和更新变量
 	discovery.Nodes.Store(NewNodes(conf))
 	// 从其他节点同步数据
 	discovery.initSync()

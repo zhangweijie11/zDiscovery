@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/zhangweijie11/zDiscovery/common"
 	"github.com/zhangweijie11/zDiscovery/global"
 	"github.com/zhangweijie11/zDiscovery/global/utils"
 	"github.com/zhangweijie11/zDiscovery/schemas"
@@ -21,7 +22,7 @@ func NodesHandler(c *gin.Context) {
 		return
 	}
 
-	fetchData, err := global.Discovery.Registry.Fetch(req.Env, global.DiscoveryAppId, global.NodeStatusUp, 0)
+	fetchData, err := common.Discovery.Registry.Fetch(req.Env, global.DiscoveryAppId, global.NodeStatusUp, 0)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    err.Code(),

@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"github.com/zhangweijie11/zDiscovery/api"
+	"github.com/zhangweijie11/zDiscovery/common"
 	"github.com/zhangweijie11/zDiscovery/config"
-	"github.com/zhangweijie11/zDiscovery/global"
 	"github.com/zhangweijie11/zDiscovery/services/registry"
 	"log"
 	"net/http"
@@ -22,8 +22,7 @@ func main() {
 		return
 	}
 	// 初始化注册中心
-	global.Discovery = registry.NewDiscovery(conf)
-
+	common.Discovery = registry.NewDiscovery(conf)
 	router := api.InitRouter()
 	srv := &http.Server{
 		Addr:    conf.HttpServer,
@@ -42,7 +41,7 @@ func main() {
 	log.Println("shutdown discovery server...")
 
 	// 注销
-	global.Discovery.CancelSelf()
+	common.Discovery.CancelSelf()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

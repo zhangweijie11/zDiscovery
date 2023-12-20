@@ -20,7 +20,7 @@ func (gd *Guard) incrNeed() {
 	defer gd.lock.Unlock()
 
 	gd.needRenewCount += int64(global.CheckEvictInterval / global.RenewInterval)
-	gd.threshold = int64(float64(gd.needRenewCount) + global.SelfProtectThreshold)
+	gd.threshold = int64(float64(gd.needRenewCount) * global.SelfProtectThreshold)
 }
 
 // 服务续约次数+1
